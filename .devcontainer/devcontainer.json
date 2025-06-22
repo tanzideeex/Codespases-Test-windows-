@@ -1,23 +1,16 @@
 {
-  "name": "QEMU Windows VM",
+  "name": "QEMU Windows VM (Small Machine)",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
-  
-  // We need to run as root to install things and manage hardware
+
+  // Run as root to install software
   "remoteUser": "root",
 
-  // Request a very powerful machine. NOTE: GitHub may ignore this on free plans.
-  "hostRequirements": {
-    "cpus": 8,
-    "memory": "16gb"
-  },
+  // The long setup script
+  "postCreateCommand": "/bin/bash -c 'apt-get update && apt-get install -y qemu-system-x86 bridge-utils curl unzip && curl -L -o windows.qcow2 https://app.vagrantup.com/win11/boxes/eval/versions/22000.556.220305-1504/providers/qemu.box && tar -xvf windows.qcow2 && mv box.img win11.qcow2 && nohup qemu-system-x86_64 -hda win11.qcow2 -m 2G -smp 2 -vga std -net nic,model=e1000 -net user -vnc :0 -usb -device usb-tablet & curl -L -o novnc.zip https://github.com/novnc/noVNC/archive/v1.4.0.zip && unzip novnc.zip && ./noVNC-1.4.0/utils/launch.sh --listen 6080 --vnc localhost:5900'",
 
-  // This is the main setup script
-  "postCreateCommand": "/bin/bash -c 'apt-get update && apt-get install -y qemu-system-x86 bridge-utils curl unzip && curl -L -o windows.qcow2 https://app.vagrantup.com/win11/boxes/eval/versions/22000.556.220305-1504/providers/qemu.box && tar -xvf windows.qcow2 && mv box.img win11.qcow2 && nohup qemu-system-x86_64 -hda win11.qcow2 -m 4G -smp 4 -vga std -net nic,model=e1000 -net user -vnc :0 -usb -device usb-tablet & curl -L -o novnc.zip https://github.com/novnc/noVNC/archive/v1.4.0.zip && unzip novnc.zip && ./noVNC-1.4.0/utils/launch.sh --listen 6080 --vnc localhost:5900'",
-
-  // Forward the VNC port so we can access the desktop
+  // Forward the VNC port
   "forwardPorts": [6080],
-
-  // Configure the port for easy browser access
+  
   "portsAttributes": {
     "6080": {
       "label": "Windows VM Display",
