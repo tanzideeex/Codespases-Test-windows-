@@ -1,20 +1,53 @@
-{
-  "name": "QEMU Windows VM (Small Machine)",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+#!/bin/bash
 
-  // Run as root to install software
-  "remoteUser": "root",
+# --- Script to install QEMU and run Windows VM ---
 
-  // The long setup script
-  "postCreateCommand": "/bin/bash -c 'apt-get update && apt-get install -y qemu-system-x86 bridge-utils curl unzip && curl -L -o windows.qcow2 https://app.vagrantup.com/win11/boxes/eval/versions/22000.556.220305-1504/providers/qemu.box && tar -xvf windows.qcow2 && mv box.img win11.qcow2 && nohup qemu-system-x86_64 -hda win11.qcow2 -m 2G -smp 2 -vga std -net nic,model=e1000 -net user -vnc :0 -usb -device usb-tablet & curl -L -o novnc.zip https://github.com/novnc/noVNC/archive/v1.4.0.zip && unzip novnc.zip && ./noVNC-1.4.0/utils/launch.sh --listen 6080 --vnc localhost:5900'",
+echo "--- Starting VM Setup Script ---"
 
-  // Forward the VNC port
-  "forwardPorts": [6080],
-  
-  "portsAttributes": {
-    "6080": {
-      "label": "Windows VM Display",
-      "protocol": "http"
-    }
-  }
-}
+# Update and install required software
+echo "--- Step 1: Installing QEMU and tools... ---"
+apt-get update
+apt-get install -y qemu-system-x86 bridge-utils curl unzip
+
+# Check if KVM is available
+if [ -e /dev/kvm ]; then
+    echo "--- KVM found! Using hardware acceleration. ---"
+    KVM_OPTIONS="-enable-kvm"
+else
+    echo "--- WARNING: KVM not found. VM will be very slow. ---"
+    KVM_OPTIONS=""
+fi
+
+# Download the Windows image
+echo "--- Step 2: Downloading Windows image... This will take a long time. ---"
+curl -L -o windows.qcow2 "https://app.vagrantup.com/win11/boxes/eval/versions/22000.556.220305-1504/providers/qemu.box"
+
+echo "--- Step 3: Extracting image... ---"
+tar -xvf windows.qcow2
+mv box.img win11.qcow2
+
+# Download noVNC
+echo "--- Step 4: Setting up noVNC web client... ---"
+curl -L -o novnc.zip "https://github.com/novnc/noVNC/archive/v1.4.0.zip"
+unzip novnc.zip
+
+# Start the Windows VM in the background
+echo "--- Step 5: Launching Windows VM... ---"
+nohup qemu-system-x86_64 \
+    -hda win11.qcow2 \
+    -m 2G \
+    -smp 2 \
+    -vga std \
+    -net nic,model=e1000 -net user \
+    -vnc :0 \
+    -usb -device usb-tablet \
+    $KVM_OPTIONS &
+
+# Wait for a moment for the VM to start up
+sleep 5
+
+# Start the noVNC server to let us connect
+echo "--- Step 6: Launching noVNC server on port 6080. ---"
+./noVNC-1.4.0/utils/launch.sh --listen 6080 --vnc localhost:5900
+
+echo "--- Setup complete! ---"
