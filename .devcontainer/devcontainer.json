@@ -1,0 +1,8 @@
+{
+	"name": "Windows",
+	"image": "mcr.microsoft.com/vscode/devcontainers/dotnet:8.0-windowsservercore",
+
+	"hostRequirements": {
+		"os": "windows"
+	}
+}
